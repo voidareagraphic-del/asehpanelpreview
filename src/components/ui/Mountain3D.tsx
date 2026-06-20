@@ -13,6 +13,7 @@ function Scene() {
   const { scene: threeScene, camera } = useThree();
   const scrollRef   = useRef(0);
   const currentRotRef = useRef(0);
+  const didSetupRef = useRef(false);
 
   useEffect(() => {
     threeScene.background = new THREE.Color(0x080810);
@@ -21,7 +22,14 @@ function Scene() {
   }, [threeScene]);
 
   useEffect(() => {
+    didSetupRef.current = false;
+  }, [scene, camScene, camera]);
+
+  useFrame(() => {
+    if (didSetupRef.current) return;
     if (!modelRef.current || !pivotRef.current) return;
+
+    didSetupRef.current = true;
 
     const mountainMesh = scene.getObjectByName("Mountain");
     const box = mountainMesh
@@ -40,7 +48,6 @@ function Scene() {
     modelRef.current.rotation.set(0, 0, Math.PI / 4);
     modelRef.current.updateMatrixWorld(true);
 
-    // موقعیت spin point رو به عنوان مرکز چرخش pivot تنظیم کن
     const spinPoint = scene.getObjectByName("secretfix");
     let pivotPos = new THREE.Vector3(0, 0, 0);
     if (spinPoint) {
@@ -49,18 +56,16 @@ function Scene() {
       modelRef.current.position.sub(pivotPos);
     }
 
-    // مقادیر دوربین از Blender (Location: -2.3868, 0.91095, 0.048488 | Rotation XYZ: 73.92°, 0°, -108.95°)
-    // تبدیل Blender→Three.js: pos(X, Z, -Y) | rot با Euler order تنظیم‌شده
     const bPos = new THREE.Vector3(-2.3868, 0.048488, -0.91095).multiplyScalar(scale);
     camera.position.copy(bPos);
     const euler = new THREE.Euler(
-      THREE.MathUtils.degToRad(73.92 - 90), // تبدیل محور X
+      THREE.MathUtils.degToRad(73.92 - 90),
       THREE.MathUtils.degToRad(-108.95),
       THREE.MathUtils.degToRad(0),
       "YXZ"
     );
     camera.quaternion.setFromEuler(euler);
-  }, [scene, camScene, camera]);
+  });
 
   useEffect(() => {
     const onScroll = () => {
